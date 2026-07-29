@@ -20,7 +20,7 @@ function normalizeSubject(subject) {
   return printable.replace(/\s+/g, ' ').trim().slice(0, 80)
 }
 
-export function buildCommonsSearchUrl(subject, { mode = 'humor' } = {}) {
+export function buildCommonsSearchUrl(subject, { mode = 'primary' } = {}) {
   const normalized = normalizeSubject(subject)
   if (!normalized) throw new Error('A subject is required for image search.')
 
@@ -28,7 +28,7 @@ export function buildCommonsSearchUrl(subject, { mode = 'humor' } = {}) {
   const primaryTerm = escapedSubject.split(/\s+/)[0].replace(/[^\p{L}\p{N}_-]/gu, '')
   let subjectQuery = `"${escapedSubject}"`
   if (mode === 'exact') subjectQuery = `intitle:"${escapedSubject}"`
-  if (mode === 'primary') subjectQuery = `intitle:${primaryTerm}`
+  if (mode === 'primary') subjectQuery = `intitle:${primaryTerm} ${escapedSubject}`
   if (mode === 'broad') subjectQuery = escapedSubject
   const humorTerms = mode === 'humor' ? ' funny wholesome' : ''
   const safeQuery = `${subjectQuery}${humorTerms} filetype:bitmap -nudity -explicit -gore -violence`
@@ -61,7 +61,7 @@ export async function searchTopicImage(subject, { fetchImpl = fetch, random = Ma
   if (!normalized) throw new Error('A subject is required for image search.')
 
   let candidates = []
-  for (const mode of ['humor', 'exact', 'primary', 'broad']) {
+  for (const mode of ['primary', 'broad']) {
     const response = await fetchImpl(buildCommonsSearchUrl(normalized, { mode }), {
       headers: { Accept: 'application/json' },
     })

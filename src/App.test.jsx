@@ -23,7 +23,10 @@ function renderApp(props = {}) {
 }
 
 describe('Digital Rage Room', () => {
-  afterEach(() => vi.useRealTimers())
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
   it('offers a large and varied target gallery with roughly twenty rage per reaction', () => {
     expect(TARGETS.length).toBeGreaterThanOrEqual(15)
     expect(new Set(TARGETS.map((target) => target.kind)).size).toBeGreaterThanOrEqual(10)
@@ -108,5 +111,18 @@ describe('Digital Rage Room', () => {
     await user.click(screen.getByRole('button', { name: /reduced motion/i }))
     expect(screen.getByRole('button', { name: /reduced motion/i })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByTestId('app-shell')).toHaveClass('reduce-motion')
+  })
+
+  it('shows a different reserve image and the failure reason when internet search fails', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const searchImage = vi.fn().mockRejectedValue(new Error('Commons returned no usable images.'))
+    const user = userEvent.setup()
+    renderApp({ searchImage })
+    const originalSrc = screen.getByRole('img', { name: /printer errors/i }).getAttribute('src')
+
+    await user.click(screen.getByRole('button', { name: /next internet target/i }))
+
+    await waitFor(() => expect(screen.getByRole('img', { name: /printer errors/i })).not.toHaveAttribute('src', originalSrc))
+    expect(screen.getByRole('status')).toHaveTextContent(/commons returned no usable images/i)
   })
 })

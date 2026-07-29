@@ -2,13 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { buildCommonsSearchUrl, searchTopicImage } from './imageSearch'
 
 describe('safe-humor image search', () => {
-  it('builds a subject-aware Commons query with safe-humor bias and exclusions', () => {
+  it('builds a subject-first Commons query with safety exclusions', () => {
     const url = new URL(buildCommonsSearchUrl('Friday deploys'))
     const query = url.searchParams.get('gsrsearch')
 
     expect(url.hostname).toBe('commons.wikimedia.org')
     expect(query).toContain('Friday deploys')
-    expect(query).toMatch(/funny|humor|wholesome/i)
+    expect(query).toContain('intitle:Friday')
+    expect(query).toContain('filetype:bitmap')
     expect(query).toContain('-nudity')
     expect(url.searchParams.get('origin')).toBe('*')
   })

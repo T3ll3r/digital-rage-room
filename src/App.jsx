@@ -51,11 +51,12 @@ function App({ searchImage = searchTopicImage }) {
       setInternetTarget(result)
       setMemeIndex(Math.floor(Math.random() * MEMES.length))
       setStatus(`INTERNET TARGET ACQUIRED: ${subject.toUpperCase()}.`)
-    } catch {
+    } catch (error) {
       setInternetTarget(null)
-      setTargetIndex(Math.floor(Math.random() * TARGETS.length))
+      setTargetIndex((index) => (index + 1) % TARGETS.length)
       setMemeIndex(Math.floor(Math.random() * MEMES.length))
-      setStatus('SAFE-HUMOR SEARCH MISSED. CURATED RESERVE TARGET DEPLOYED.')
+      const reason = error instanceof Error ? error.message : 'Internet search failed.'
+      setStatus(`SEARCH FAILED: ${reason.toUpperCase()} CURATED RESERVE TARGET DEPLOYED.`)
     } finally {
       setImageLoading(false)
     }
@@ -233,7 +234,7 @@ function App({ searchImage = searchTopicImage }) {
                 onError={() => {
                   if (internetTarget) {
                     setInternetTarget(null)
-                    setTargetIndex(Math.floor(Math.random() * TARGETS.length))
+                    setTargetIndex((index) => (index + 1) % TARGETS.length)
                     setStatus('INTERNET IMAGE FAILED TO LOAD. CURATED RESERVE DEPLOYED.')
                   }
                 }}
