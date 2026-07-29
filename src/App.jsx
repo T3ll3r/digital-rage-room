@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ACTIONS, MEMES, PRESETS, TARGETS } from './data'
+import { searchTopicImage } from './imageSearch'
 import './App.css'
 
 function playImpact(kind) {
@@ -19,10 +20,13 @@ function playImpact(kind) {
   oscillator.stop(context.currentTime + 0.2)
 }
 
-function App() {
+function App({ searchImage = searchTopicImage }) {
   const [draftTopic, setDraftTopic] = useState('printer errors')
   const [topic, setTopic] = useState('printer errors')
   const [targetIndex, setTargetIndex] = useState(0)
+  const [internetTarget, setInternetTarget] = useState(null)
+  const [memeIndex, setMemeIndex] = useState(0)
+  const [imageLoading, setImageLoading] = useState(false)
   const [rage, setRage] = useState(12)
   const [effect, setEffect] = useState('idle')
   const [effectRun, setEffectRun] = useState(0)
@@ -33,23 +37,43 @@ function App() {
 
   useEffect(() => () => clearTimeout(resetTimer.current), [])
 
-  const target = TARGETS[targetIndex]
-  const meme = MEMES[targetIndex % MEMES.length]
+  const target = internetTarget ?? TARGETS[targetIndex]
+  const meme = MEMES[memeIndex]
+  const rootCause = draftTopic.trim() || topic
   const shards = useMemo(() => Array.from({ length: 16 }, (_, index) => index), [])
+
+  async function acquireInternetTarget(subject) {
+    setImageLoading(true)
+    setStatus(`SCANNING THE INTERNET FOR SAFE ${subject.toUpperCase()} HUMOR...`)
+    try {
+      const result = await searchImage(subject)
+      if (!result) throw new Error('No image result returned.')
+      setInternetTarget(result)
+      setMemeIndex(Math.floor(Math.random() * MEMES.length))
+      setStatus(`INTERNET TARGET ACQUIRED: ${subject.toUpperCase()}.`)
+    } catch {
+      setInternetTarget(null)
+      setTargetIndex(Math.floor(Math.random() * TARGETS.length))
+      setMemeIndex(Math.floor(Math.random() * MEMES.length))
+      setStatus('SAFE-HUMOR SEARCH MISSED. CURATED RESERVE TARGET DEPLOYED.')
+    } finally {
+      setImageLoading(false)
+    }
+  }
 
   function loadTopic(event) {
     event.preventDefault()
     const nextTopic = draftTopic.trim() || 'that one mysterious production issue'
     setTopic(nextTopic)
     setEffect('idle')
-    setStatus(`NEW TARGET LOCKED: ${nextTopic.toUpperCase()}.`)
+    void acquireInternetTarget(nextTopic)
   }
 
   function choosePreset(nextTopic) {
     setDraftTopic(nextTopic)
     setTopic(nextTopic)
     setEffect('idle')
-    setStatus(`NEW TARGET LOCKED: ${nextTopic.toUpperCase()}.`)
+    void acquireInternetTarget(nextTopic)
   }
 
   function react(action) {
@@ -63,9 +87,12 @@ function App() {
       if (soundOn) playImpact('nuke')
       resetTimer.current = setTimeout(() => {
         setRage(0)
-        setTargetIndex((index) => (index + 1) % TARGETS.length)
+        setInternetTarget(null)
+        setTargetIndex(Math.floor(Math.random() * TARGETS.length))
+        setMemeIndex(Math.floor(Math.random() * MEMES.length))
         setEffect('idle')
         setStatus('BLAST COMPLETE. RAGE RESET. FRESH TARGET ACQUIRED.')
+        void acquireInternetTarget(topic)
       }, 1800)
       return
     }
@@ -77,9 +104,8 @@ function App() {
   }
 
   function nextTarget() {
-    setTargetIndex((index) => (index + 1) % TARGETS.length)
     setEffect('idle')
-    setStatus('FRESH, COMPLETELY INNOCENT TARGET LOADED.')
+    void acquireInternetTarget(topic)
   }
 
   function resetRoom() {
@@ -137,7 +163,9 @@ function App() {
                 maxLength={54}
                 autoComplete="off"
               />
-              <button className="load-button" type="submit">ACQUIRE TARGET</button>
+              <button className="load-button" type="submit" disabled={imageLoading}>
+                {imageLoading ? 'SCANNING...' : 'ACQUIRE TARGET'}
+              </button>
             </div>
           </form>
 
@@ -182,26 +210,40 @@ function App() {
           <div className="stage-toolbar">
             <div>
               <span className="live-dot" aria-hidden="true" />
-              <span id="target-label">ACTIVE OBJECTIVE: <strong>{topic}</strong> · {target.kind} {targetIndex + 1}/{TARGETS.length}</span>
+              <span id="target-label">
+                ACTIVE OBJECTIVE: <strong>{topic}</strong> · {internetTarget ? 'INTERNET SEARCH' : `RESERVE ${targetIndex + 1}/${TARGETS.length}`}
+              </span>
             </div>
-            <button type="button" className="next-button" onClick={nextTarget}>NEXT INNOCENT TARGET →</button>
+            <button type="button" className="next-button" onClick={nextTarget} disabled={imageLoading}>
+              {imageLoading ? 'SCANNING...' : 'NEXT INTERNET TARGET →'}
+            </button>
           </div>
 
           <div
             className="target-stage"
             data-testid="target-stage"
             data-effect={effect}
-            key={`${targetIndex}-${effectRun}`}
+            key={`${target.src}-${effectRun}`}
           >
             <div className="warning-tape warning-top" aria-hidden="true">CAUTION // EMOTIONAL PACKETS IN TRANSIT //</div>
             <div className="image-wrap">
-              <img src={target.src} alt={`A ${target.kind} representing ${topic}`} />
+              <img
+                src={target.src}
+                alt={`A ${target.kind} representing ${topic}`}
+                onError={() => {
+                  if (internetTarget) {
+                    setInternetTarget(null)
+                    setTargetIndex(Math.floor(Math.random() * TARGETS.length))
+                    setStatus('INTERNET IMAGE FAILED TO LOAD. CURATED RESERVE DEPLOYED.')
+                  }
+                }}
+              />
               <div className="target-caption">
                 <small>ROOT CAUSE ANALYSIS</small>
-                <strong>{topic.toUpperCase()}</strong>
+                <strong data-testid="root-cause">{rootCause.toUpperCase()}</strong>
               </div>
               <div className="meme-stamp">
-                <small>FIELD MEME #{(targetIndex % MEMES.length) + 1}</small>
+                <small>FIELD MEME #{memeIndex + 1} / {MEMES.length}</small>
                 <strong data-testid="army-meme">{meme}</strong>
               </div>
               <div className="heat" aria-hidden="true" />
@@ -231,7 +273,11 @@ function App() {
                 ))}
               </div>
             </div>
-            <p className="credit">{target.credit}</p>
+            <p className="credit">
+              {target.pageUrl ? (
+                <a href={target.pageUrl} target="_blank" rel="noreferrer">{target.credit}</a>
+              ) : target.credit}
+            </p>
           </div>
 
           <div className="status-line" role="status" aria-live="polite">
