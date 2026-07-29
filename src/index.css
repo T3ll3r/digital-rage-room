@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Black+Ops+One&family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap');
+
+:root {
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  color: #202418;
+  background: #3f4732;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  --ink: #202418;
+  --muted: #626650;
+  --paper: #e8dfc5;
+  --sage: #a7aa82;
+  --border: #626a4f;
+  --orange: #b94b22;
+  --acid: #d9c85c;
+  --terminal: #12170e;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, a:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 3px;
+}
+button:active { transform: translateY(2px); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
