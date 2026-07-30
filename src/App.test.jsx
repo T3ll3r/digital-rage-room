@@ -43,6 +43,14 @@ describe('Digital Rage Room', () => {
     expect(screen.getByText(/not affiliated with the department of defense/i)).toBeInTheDocument()
   })
 
+  it('places the field meme beside the image instead of over it', () => {
+    renderApp()
+    const fieldMeme = screen.getByTestId('army-meme')
+
+    expect(fieldMeme.closest('.image-wrap')).toBeNull()
+    expect(fieldMeme.closest('.meme-panel')).toBeInTheDocument()
+  })
+
   it('loads a frustration and makes it the active target', async () => {
     const user = userEvent.setup()
     const { searchImage } = renderApp()

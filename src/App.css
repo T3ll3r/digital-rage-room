@@ -145,6 +145,7 @@
   padding-left: 8px; color: var(--ink); background: repeating-linear-gradient(135deg, var(--acid) 0 22px, #b8ca33 22px 27px);
   border: 1px solid var(--ink); font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: .08em;
 }
+.target-content { display: grid; grid-template-columns: minmax(0, 1fr) minmax(210px, 28%); gap: 12px; align-items: stretch; }
 .image-wrap { position: relative; height: clamp(340px, 51vh, 590px); margin-top: 10px; overflow: hidden; background: #0e1411; isolation: isolate; }
 .image-wrap > img { width: 100%; height: 100%; display: block; object-position: center; filter: saturate(.76) contrast(1.08); transition: transform .6s cubic-bezier(.2,.8,.2,1), filter .4s, opacity .35s; }
 .image-wrap > img.fit-contain { object-fit: contain; }
@@ -153,7 +154,8 @@
 .target-caption { position: absolute; z-index: 4; left: 18px; bottom: 18px; max-width: calc(100% - 36px); padding: 9px 13px; border: 1px solid var(--ink); background: var(--paper); box-shadow: 4px 4px 0 var(--orange); transform: rotate(-1deg); }
 .target-caption small { display: block; margin-bottom: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; }
 .target-caption strong { display: block; overflow: hidden; font-size: clamp(18px, 2.4vw, 34px); letter-spacing: -.03em; text-overflow: ellipsis; white-space: nowrap; }
-.meme-stamp { position: absolute; z-index: 5; top: 24px; right: 20px; width: min(390px, calc(100% - 40px)); padding: 10px 14px; color: #f2e8ca; background: rgba(18,23,14,.9); border: 2px solid var(--acid); box-shadow: 5px 5px 0 rgba(0,0,0,.72); transform: rotate(1deg); }
+.meme-panel { min-width: 0; margin-top: 10px; padding: 14px 12px; background: #171e14; border: 1px solid #566047; }
+.meme-stamp { position: relative; z-index: 5; width: 100%; padding: 10px 14px; color: #f2e8ca; background: rgba(18,23,14,.96); border: 2px solid var(--acid); box-shadow: 5px 5px 0 rgba(0,0,0,.72); transform: rotate(1deg); }
 .meme-stamp small { display: block; margin-bottom: 5px; color: var(--acid); font: 600 9px 'IBM Plex Mono', monospace; letter-spacing: .12em; }
 .meme-stamp strong { display: block; font: 400 clamp(16px, 2vw, 26px)/1.05 'Black Ops One', 'IBM Plex Sans', sans-serif; text-wrap: balance; }
 .credit { margin: 9px 0 0; color: #c7cbbf; font-family: 'IBM Plex Mono', monospace; font-size: 9px; }
@@ -258,6 +260,8 @@ footer { min-height: 42px; display: flex; align-items: center; justify-content: 
   .stage-toolbar { align-items: flex-start; }
   .stage-toolbar > div { max-width: 54%; }
   .next-button { min-height: 44px; }
+  .target-content { grid-template-columns: 1fr; }
+  .meme-panel { margin-top: 0; }
   .image-wrap { height: 48vh; min-height: 330px; }
   .action-grid { grid-template-columns: repeat(2,1fr); }
   .action:last-child { grid-column: 1 / -1; }

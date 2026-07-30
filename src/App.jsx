@@ -242,7 +242,8 @@ function App({ searchImage = searchTopicImage }) {
             key={`${target.src}-${effectRun}`}
           >
             <div className="warning-tape warning-top" aria-hidden="true">CAUTION // EMOTIONAL PACKETS IN TRANSIT //</div>
-            <div className="image-wrap">
+            <div className="target-content">
+              <div className="image-wrap">
               <img
                 className={`fit-${imageFit}`}
                 src={target.src}
@@ -260,10 +261,6 @@ function App({ searchImage = searchTopicImage }) {
               <div className="target-caption">
                 <small>ROOT CAUSE ANALYSIS</small>
                 <strong data-testid="root-cause">{rootCause.toUpperCase()}</strong>
-              </div>
-              <div className="meme-stamp">
-                <small>FIELD MEME #{memeIndex + 1} / {MEMES.length}</small>
-                <strong data-testid="army-meme">{meme}</strong>
               </div>
               <div className="heat" aria-hidden="true" />
               <div className="fire" aria-hidden="true">
@@ -291,6 +288,13 @@ function App({ searchImage = searchTopicImage }) {
                   />
                 ))}
               </div>
+              </div>
+              <aside className="meme-panel" aria-label="Related field meme">
+                <div className="meme-stamp">
+                  <small>FIELD MEME #{memeIndex + 1} / {MEMES.length}</small>
+                  <strong data-testid="army-meme">{meme}</strong>
+                </div>
+              </aside>
             </div>
             <p className="credit">
               {target.pageUrl ? (
