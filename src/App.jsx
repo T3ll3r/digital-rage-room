@@ -42,7 +42,7 @@ function App({ searchImage = searchTopicImage }) {
   const target = internetTarget ?? TARGETS[targetIndex]
   const meme = MEMES[memeIndex]
   const rootCause = draftTopic.trim() || topic
-  const shards = useMemo(() => Array.from({ length: 16 }, (_, index) => index), [])
+  const shards = useMemo(() => Array.from({ length: 25 }, (_, index) => index), [])
 
   async function acquireInternetTarget(subject) {
     setImageLoading(true)
@@ -278,13 +278,13 @@ function App({ searchImage = searchTopicImage }) {
                 </div>
               </div>
               <div className="debug-swarm" aria-hidden="true">
-                {['BUG', '404', 'NULL', 'SEGFAULT', 'WHY'].map((bug) => <b key={bug}>{bug}</b>)}
+                {['BUG', '404', 'NULL', 'SEGFAULT', 'WHY', 'ERROR', 'FAIL', 'CRASH', 'BUGGY', 'FIXED'].map((bug) => <b key={bug}>{bug}</b>)}
               </div>
               <div className="shards" aria-hidden="true">
                 {shards.map((shard) => (
                   <i
                     key={shard}
-                    style={{ '--x': shard % 4, '--y': Math.floor(shard / 4), backgroundImage: `url(${target.src})` }}
+                    style={{ '--x': shard % 5, '--y': Math.floor(shard / 5), backgroundImage: `url(${target.src})` }}
                   />
                 ))}
               </div>
