@@ -1,39 +1,55 @@
 import { describe, expect, it, vi } from 'vitest'
-import { buildCommonsSearchUrl, searchTopicImage } from './imageSearch'
+import { MEME_TEMPLATE_API, searchTopicImage } from './imageSearch'
 
 describe('safe-humor image search', () => {
-  it('builds a subject-first Commons query with safety exclusions', () => {
-    const url = new URL(buildCommonsSearchUrl('Friday deploys'))
-    const query = url.searchParams.get('gsrsearch')
-
-    expect(url.hostname).toBe('commons.wikimedia.org')
-    expect(query).toContain('Friday deploys')
-    expect(query).toContain('intitle:Friday')
-    expect(query).toContain('filetype:bitmap')
-    expect(query).toContain('-nudity')
-    expect(url.searchParams.get('origin')).toBe('*')
+  it('queries the public meme-template endpoint', () => {
+    expect(MEME_TEMPLATE_API).toBe('https://api.memegen.link/templates/')
   })
 
-  it('randomly selects a safe raster image from internet results', async () => {
+  it('selects a safe humorous template related to the subject', async () => {
     const fetchImpl = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({
-        query: {
-          pages: {
-            1: { title: 'File:Wholesome printer joke.jpg', imageinfo: [{ thumburl: 'https://upload.wikimedia.org/safe-printer.jpg', descriptionurl: 'https://commons.wikimedia.org/wiki/File:Safe', mime: 'image/jpeg' }] },
-            2: { title: 'File:Office cartoon.png', imageinfo: [{ thumburl: 'https://upload.wikimedia.org/office-cartoon.png', descriptionurl: 'https://commons.wikimedia.org/wiki/File:Cartoon', mime: 'image/png' }] },
-            3: { title: 'File:Explicit nudity.jpg', imageinfo: [{ thumburl: 'https://upload.wikimedia.org/blocked.jpg', mime: 'image/jpeg' }] },
-          },
-        },
-      }),
+      json: async () => [
+        { id: 'fine', name: 'This is Fine', blank: 'https://api.memegen.link/images/fine.jpg' },
+        { id: 'officespace', name: 'That Would Be Great', blank: 'https://api.memegen.link/images/officespace.jpg' },
+        { id: 'unknown-template', name: 'Unreviewed Template', blank: 'https://example.com/unknown.jpg' },
+      ],
     })
 
-    const result = await searchTopicImage('printer errors', { fetchImpl, random: () => 0.75 })
+    const result = await searchTopicImage('printer errors', { fetchImpl, random: () => 0 })
 
-    expect(fetchImpl).toHaveBeenCalledOnce()
-    expect(result.src).toBe('https://upload.wikimedia.org/office-cartoon.png')
-    expect(result.kind).toBe('printer errors')
-    expect(result.credit).toMatch(/Wikimedia Commons/i)
+    expect(fetchImpl).toHaveBeenCalledWith(MEME_TEMPLATE_API, expect.any(Object))
+    expect(result.src).toBe('https://api.memegen.link/images/officespace.jpg')
+    expect(result.kind).toBe('printer errors meme')
+    expect(result.credit).toMatch(/That Would Be Great.*Memegen\.link/i)
+  })
+
+  it('randomizes among reviewed templates when no subject tag matches', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { id: 'doge', name: 'Doge', blank: 'https://api.memegen.link/images/doge.jpg' },
+        { id: 'wonka', name: 'Condescending Wonka', blank: 'https://api.memegen.link/images/wonka.jpg' },
+      ],
+    })
+
+    const result = await searchTopicImage('quantum banana', { fetchImpl, random: () => 0.75 })
+
+    expect(result.src).toContain('/wonka.jpg')
+  })
+
+  it('matches plural and related deployment terms to a deployment meme', async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => [
+        { id: 'stonks', name: 'Stonks', blank: 'https://api.memegen.link/images/stonks.jpg' },
+        { id: 'success', name: 'Success Kid', blank: 'https://api.memegen.link/images/success.jpg' },
+      ],
+    })
+
+    const result = await searchTopicImage('Friday deploys', { fetchImpl, random: () => 0 })
+
+    expect(result.src).toContain('/success.jpg')
   })
 
   it('rejects an empty subject without requesting the internet', async () => {

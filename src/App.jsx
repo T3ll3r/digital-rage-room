@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ACTIONS, MEMES, PRESETS, TARGETS } from './data'
 import { searchTopicImage } from './imageSearch'
+import { selectRelatedMemeIndex } from './memeMatcher'
 import './App.css'
 
 function playImpact(kind) {
@@ -25,7 +26,7 @@ function App({ searchImage = searchTopicImage }) {
   const [topic, setTopic] = useState('printer errors')
   const [targetIndex, setTargetIndex] = useState(0)
   const [internetTarget, setInternetTarget] = useState(null)
-  const [memeIndex, setMemeIndex] = useState(0)
+  const [memeIndex, setMemeIndex] = useState(() => selectRelatedMemeIndex('printer errors', MEMES))
   const [imageLoading, setImageLoading] = useState(false)
   const [rage, setRage] = useState(12)
   const [effect, setEffect] = useState('idle')
@@ -44,17 +45,16 @@ function App({ searchImage = searchTopicImage }) {
 
   async function acquireInternetTarget(subject) {
     setImageLoading(true)
+    setMemeIndex(selectRelatedMemeIndex(subject, MEMES))
     setStatus(`SCANNING THE INTERNET FOR SAFE ${subject.toUpperCase()} HUMOR...`)
     try {
       const result = await searchImage(subject)
       if (!result) throw new Error('No image result returned.')
       setInternetTarget(result)
-      setMemeIndex(Math.floor(Math.random() * MEMES.length))
       setStatus(`INTERNET TARGET ACQUIRED: ${subject.toUpperCase()}.`)
     } catch (error) {
       setInternetTarget(null)
       setTargetIndex((index) => (index + 1) % TARGETS.length)
-      setMemeIndex(Math.floor(Math.random() * MEMES.length))
       const reason = error instanceof Error ? error.message : 'Internet search failed.'
       setStatus(`SEARCH FAILED: ${reason.toUpperCase()} CURATED RESERVE TARGET DEPLOYED.`)
     } finally {
@@ -90,7 +90,6 @@ function App({ searchImage = searchTopicImage }) {
         setRage(0)
         setInternetTarget(null)
         setTargetIndex(Math.floor(Math.random() * TARGETS.length))
-        setMemeIndex(Math.floor(Math.random() * MEMES.length))
         setEffect('idle')
         setStatus('BLAST COMPLETE. RAGE RESET. FRESH TARGET ACQUIRED.')
         void acquireInternetTarget(topic)

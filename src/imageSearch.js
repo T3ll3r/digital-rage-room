@@ -1,16 +1,33 @@
-const COMMONS_API = 'https://commons.wikimedia.org/w/api.php'
-const BLOCKED_TERMS = [
-  'adult',
-  'blood',
-  'corpse',
-  'explicit',
-  'gore',
-  'graphic',
-  'nude',
-  'nudity',
-  'porn',
-  'sexual',
-]
+import { relatedSubjectTokens, tokenizeForMatching } from './memeMatcher.js'
+
+export const MEME_TEMPLATE_API = 'https://api.memegen.link/templates/'
+
+const SAFE_TEMPLATE_TAGS = {
+  aag: 'root cause theory mystery explanation',
+  ackbar: 'security phishing password trap alert',
+  astronaut: 'cloud production server bug always',
+  cake: 'office printer work ticket paperwork',
+  cmm: 'change requirement meeting debate policy',
+  disastergirl: 'fire outage incident production deploy',
+  doge: 'network wifi computer software confused',
+  drake: 'choice option software tool upgrade',
+  fine: 'error failure broken fire outage production deploy',
+  gb: 'code debug dns network server database brain',
+  grumpycat: 'password email meeting user frustration',
+  gru: 'plan project deployment update migration',
+  noah: 'unknown error bug failure confusion',
+  officespace: 'printer office ticket work email meeting',
+  'panik-kalm-panik': 'alert outage incident deploy production error',
+  patrick: 'migration move server database cloud',
+  pigeon: 'bug error dns network confusion user',
+  spiderman: 'merge conflict duplicate code blame',
+  stonks: 'budget metric cloud server dashboard management',
+  stop: 'bug alert security incident error',
+  success: 'fix build deploy patch password success',
+  wonka: 'ticket request user helpdesk password',
+}
+
+const GENERIC_SUBJECT_TERMS = new Set(['broken', 'error', 'expire', 'failure', 'issue', 'outage', 'problem'])
 
 function normalizeSubject(subject) {
   const printable = Array.from(subject, (character) => {
@@ -20,66 +37,49 @@ function normalizeSubject(subject) {
   return printable.replace(/\s+/g, ' ').trim().slice(0, 80)
 }
 
-export function buildCommonsSearchUrl(subject, { mode = 'primary' } = {}) {
-  const normalized = normalizeSubject(subject)
-  if (!normalized) throw new Error('A subject is required for image search.')
-
-  const escapedSubject = normalized.replace(/["\\]/g, ' ')
-  const primaryTerm = escapedSubject.split(/\s+/)[0].replace(/[^\p{L}\p{N}_-]/gu, '')
-  let subjectQuery = `"${escapedSubject}"`
-  if (mode === 'exact') subjectQuery = `intitle:"${escapedSubject}"`
-  if (mode === 'primary') subjectQuery = `intitle:${primaryTerm} ${escapedSubject}`
-  if (mode === 'broad') subjectQuery = escapedSubject
-  const humorTerms = mode === 'humor' ? ' funny wholesome' : ''
-  const safeQuery = `${subjectQuery}${humorTerms} filetype:bitmap -nudity -explicit -gore -violence`
-  const params = new URLSearchParams({
-    action: 'query',
-    generator: 'search',
-    gsrsearch: safeQuery,
-    gsrnamespace: '6',
-    gsrlimit: '30',
-    prop: 'imageinfo',
-    iiprop: 'url|mime',
-    iiurlwidth: '1400',
-    format: 'json',
-    origin: '*',
-  })
-
-  return `${COMMONS_API}?${params}`
+function templateScore(template, subjectTokens, relatedTokens) {
+  const tagTokens = new Set(tokenizeForMatching(`${template.name} ${SAFE_TEMPLATE_TAGS[template.id]}`))
+  let score = 0
+  for (const token of tagTokens) {
+    if (subjectTokens.has(token)) score += GENERIC_SUBJECT_TERMS.has(token) ? 1 : 4
+    else if (relatedTokens.has(token)) score += 1
+  }
+  return score
 }
 
-function isSafeRasterImage(page) {
-  const info = page.imageinfo?.[0]
-  if (!info?.thumburl || !/^image\/(?:jpeg|png|webp)$/i.test(info.mime ?? '')) return false
-
-  const searchableText = `${page.title} ${info.descriptionurl ?? ''}`.toLowerCase()
-  return !BLOCKED_TERMS.some((term) => searchableText.includes(term))
+function isReviewedTemplate(template) {
+  if (!SAFE_TEMPLATE_TAGS[template.id] || !template.blank) return false
+  try {
+    return new URL(template.blank).hostname === 'api.memegen.link'
+  } catch {
+    return false
+  }
 }
 
 export async function searchTopicImage(subject, { fetchImpl = fetch, random = Math.random } = {}) {
   const normalized = normalizeSubject(subject)
   if (!normalized) throw new Error('A subject is required for image search.')
 
-  let candidates = []
-  for (const mode of ['primary', 'broad']) {
-    const response = await fetchImpl(buildCommonsSearchUrl(normalized, { mode }), {
-      headers: { Accept: 'application/json' },
-    })
-    if (!response.ok) continue
+  const response = await fetchImpl(MEME_TEMPLATE_API, {
+    headers: { Accept: 'application/json' },
+  })
+  if (!response.ok) throw new Error(`Meme search failed (${response.status}).`)
 
-    const payload = await response.json()
-    candidates = Object.values(payload.query?.pages ?? {}).filter(isSafeRasterImage)
-    if (candidates.length > 0) break
-  }
-  if (candidates.length === 0) throw new Error('No safe humorous image results were found.')
+  const templates = (await response.json()).filter(isReviewedTemplate)
+  if (templates.length === 0) throw new Error('No reviewed meme templates were available.')
 
+  const { subjectTokens, relatedTokens } = relatedSubjectTokens(normalized)
+  const scores = templates.map((template) => templateScore(template, subjectTokens, relatedTokens))
+  const bestScore = Math.max(...scores)
+  const candidates = bestScore > 0
+    ? templates.filter((_, index) => scores[index] === bestScore)
+    : templates
   const selected = candidates[Math.floor(random() * candidates.length)] ?? candidates[0]
-  const info = selected.imageinfo[0]
 
   return {
-    src: info.thumburl,
-    kind: normalized,
-    credit: 'Wikimedia Commons · safe-humor search',
-    pageUrl: info.descriptionurl,
+    src: selected.blank,
+    kind: `${normalized} meme`,
+    credit: `${selected.name} · Memegen.link`,
+    pageUrl: 'https://memegen.link/',
   }
 }

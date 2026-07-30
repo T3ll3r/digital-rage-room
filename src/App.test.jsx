@@ -9,10 +9,10 @@ function createImageSearch() {
   return vi.fn(async (subject) => {
     request += 1
     return {
-      src: `https://upload.wikimedia.org/${encodeURIComponent(subject)}/${request}.jpg`,
-      kind: subject,
-      credit: 'Wikimedia Commons · safe-humor search',
-      pageUrl: 'https://commons.wikimedia.org/',
+      src: `https://api.memegen.link/images/test-${encodeURIComponent(subject)}-${request}.jpg`,
+      kind: `${subject} meme`,
+      credit: 'Test Meme · Memegen.link',
+      pageUrl: 'https://memegen.link/',
     }
   })
 }
@@ -39,7 +39,7 @@ describe('Digital Rage Room', () => {
     renderApp()
 
     expect(screen.getByText(/army field edition/i)).toBeInTheDocument()
-    expect(screen.getByTestId('army-meme')).toHaveTextContent(MEMES[0])
+    expect(screen.getByTestId('army-meme')).toHaveTextContent(/printer|toner|scanner/i)
     expect(screen.getByText(/not affiliated with the department of defense/i)).toBeInTheDocument()
   })
 
@@ -58,7 +58,8 @@ describe('Digital Rage Room', () => {
     expect(searchImage).toHaveBeenCalledWith('Friday deploys')
     expect(screen.getByText(/friday deploys/i, { selector: '#target-label strong' })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /friday deploys/i })).toBeInTheDocument()
-    expect(screen.getByText(/wikimedia commons/i)).toHaveAttribute('href', 'https://commons.wikimedia.org/')
+    expect(screen.getByTestId('army-meme')).toHaveTextContent(/deploy|build|prod|patch|friday/i)
+    expect(screen.getByText(/memegen\.link/i)).toHaveAttribute('href', 'https://memegen.link/')
   })
 
   it('reacts to a target and increases the rage meter', async () => {
