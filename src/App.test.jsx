@@ -74,6 +74,42 @@ describe('Digital Rage Room', () => {
     expect(screen.getByTestId('target-stage')).toHaveAttribute('data-effect', 'burn')
   })
 
+  it('fits a portrait image inside the available stage without cropping it', () => {
+    renderApp()
+    const image = screen.getByRole('img', { name: /printer errors/i })
+    const frame = image.parentElement
+    Object.defineProperties(image, {
+      naturalWidth: { configurable: true, value: 400 },
+      naturalHeight: { configurable: true, value: 800 },
+    })
+    Object.defineProperties(frame, {
+      clientWidth: { configurable: true, value: 1000 },
+      clientHeight: { configurable: true, value: 500 },
+    })
+
+    fireEvent.load(image)
+
+    expect(image).toHaveClass('fit-contain')
+  })
+
+  it('fills the stage when the image and frame aspect ratios are close', () => {
+    renderApp()
+    const image = screen.getByRole('img', { name: /printer errors/i })
+    const frame = image.parentElement
+    Object.defineProperties(image, {
+      naturalWidth: { configurable: true, value: 1600 },
+      naturalHeight: { configurable: true, value: 900 },
+    })
+    Object.defineProperties(frame, {
+      clientWidth: { configurable: true, value: 1000 },
+      clientHeight: { configurable: true, value: 600 },
+    })
+
+    fireEvent.load(image)
+
+    expect(image).toHaveClass('fit-cover')
+  })
+
   it('triggers a nuclear explosion at maximum rage and resets the meter', async () => {
     vi.useFakeTimers()
     renderApp()
@@ -103,7 +139,7 @@ describe('Digital Rage Room', () => {
 
     const firstImage = screen.getByRole('img', { name: /printer errors/i })
     const firstSrc = firstImage.getAttribute('src')
-    await user.click(screen.getByRole('button', { name: /next internet target/i }))
+    await user.click(screen.getByRole('button', { name: /^next target/i }))
     await waitFor(() => expect(screen.getByRole('img', { name: /printer errors/i })).not.toHaveAttribute('src', firstSrc))
 
     await user.click(screen.getByRole('button', { name: /sound effects/i }))
@@ -121,7 +157,7 @@ describe('Digital Rage Room', () => {
     renderApp({ searchImage })
     const originalSrc = screen.getByRole('img', { name: /printer errors/i }).getAttribute('src')
 
-    await user.click(screen.getByRole('button', { name: /next internet target/i }))
+    await user.click(screen.getByRole('button', { name: /^next target/i }))
 
     await waitFor(() => expect(screen.getByRole('img', { name: /printer errors/i })).not.toHaveAttribute('src', originalSrc))
     expect(screen.getByRole('status')).toHaveTextContent(/commons returned no usable images/i)

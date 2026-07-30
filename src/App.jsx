@@ -28,6 +28,7 @@ function App({ searchImage = searchTopicImage }) {
   const [internetTarget, setInternetTarget] = useState(null)
   const [memeIndex, setMemeIndex] = useState(() => selectRelatedMemeIndex('printer errors', MEMES))
   const [imageLoading, setImageLoading] = useState(false)
+  const [imageFit, setImageFit] = useState('contain')
   const [rage, setRage] = useState(12)
   const [effect, setEffect] = useState('idle')
   const [effectRun, setEffectRun] = useState(0)
@@ -45,6 +46,7 @@ function App({ searchImage = searchTopicImage }) {
 
   async function acquireInternetTarget(subject) {
     setImageLoading(true)
+    setImageFit('contain')
     setMemeIndex(selectRelatedMemeIndex(subject, MEMES))
     setStatus(`SCANNING THE INTERNET FOR SAFE ${subject.toUpperCase()} HUMOR...`)
     try {
@@ -106,6 +108,20 @@ function App({ searchImage = searchTopicImage }) {
   function nextTarget() {
     setEffect('idle')
     void acquireInternetTarget(topic)
+  }
+
+  function fitImageToStage(event) {
+    const image = event.currentTarget
+    const frame = image.parentElement
+    if (!image.naturalWidth || !image.naturalHeight || !frame?.clientWidth || !frame.clientHeight) {
+      setImageFit('contain')
+      return
+    }
+
+    const imageRatio = image.naturalWidth / image.naturalHeight
+    const frameRatio = frame.clientWidth / frame.clientHeight
+    const ratioDifference = Math.max(imageRatio / frameRatio, frameRatio / imageRatio)
+    setImageFit(ratioDifference > 1.18 ? 'contain' : 'cover')
   }
 
   function resetRoom() {
@@ -215,7 +231,7 @@ function App({ searchImage = searchTopicImage }) {
               </span>
             </div>
             <button type="button" className="next-button" onClick={nextTarget} disabled={imageLoading}>
-              {imageLoading ? 'SCANNING...' : 'NEXT INTERNET TARGET →'}
+              {imageLoading ? 'SCANNING...' : 'NEXT TARGET →'}
             </button>
           </div>
 
@@ -228,10 +244,13 @@ function App({ searchImage = searchTopicImage }) {
             <div className="warning-tape warning-top" aria-hidden="true">CAUTION // EMOTIONAL PACKETS IN TRANSIT //</div>
             <div className="image-wrap">
               <img
+                className={`fit-${imageFit}`}
                 src={target.src}
                 alt={`A ${target.kind} representing ${topic}`}
+                onLoad={fitImageToStage}
                 onError={() => {
                   if (internetTarget) {
+                    setImageFit('contain')
                     setInternetTarget(null)
                     setTargetIndex((index) => (index + 1) % TARGETS.length)
                     setStatus('INTERNET IMAGE FAILED TO LOAD. CURATED RESERVE DEPLOYED.')
